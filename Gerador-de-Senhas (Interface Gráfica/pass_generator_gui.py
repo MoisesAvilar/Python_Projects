@@ -18,4 +18,5 @@ def main_function(caracter, lenght):
 
     return password
 
+
 print(main_function(1, 10))
