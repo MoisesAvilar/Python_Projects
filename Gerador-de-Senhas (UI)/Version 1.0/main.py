@@ -1,5 +1,5 @@
 import PySimpleGUI as Gui
-from pass_generator_gui import main_function
+from functions import *
 
 
 # interface Gráfica
