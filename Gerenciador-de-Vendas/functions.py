@@ -8,28 +8,36 @@ def carregar_dados():
     cursor = con.cursor()
     cursor.execute('''SELECT Produto, Descrição, Quantidade, Tamanho from Produtos''')
     dados = cursor.fetchall()
-    nome = []
-    descricao = []
-    quantidade = []
-    tamanho = []
+    return dados
 
-    for item in dados:
-        nome.append(item[0])
-        descricao.append(item[1])
-        quantidade.append(item[2])
-        tamanho.append(item[3])
-    con.close()
-    return nome, descricao, quantidade, tamanho
 
 def cadastrar_venda():
+    con = sqlite3.connect('vendas.db')
+    con.execute('''CREATE TABLE IF NOT EXISTS Vendas
+                    (ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                    Produto TEXT NOT NULL,
+                    Descrição TEXT NOT NULL,
+                    Código TEXT NOT NULL,
+                    Quantidade INTEGER NOT NULL,
+                    Preço REAL NOT NULL,
+                    Vendedor TEXT,
+                    Cliente TEXT,
+                    Total REAL NOT NULL,
+                    Data TEXT NOT NULL)''')
+
     dados = carregar_dados()
+    nome = [tupla[0] for tupla in dados]
+    descricao = [tupla[1] for tupla in dados]
+    volume = [tupla[2] for tupla in dados]
+    referencia = [tupla[3] for tupla in dados]
 
     layout = [
         [gui.Text()],
-        [gui.Text('Nome do produto', font=20, size=18), gui.Combo(dados[0], size=20, key='nome', enable_events=True, readonly=True)],
-        [gui.Text('Quantidade', size=20), gui.Input(size=5, key='quantidade'), gui.Text(key='disponivel')],
-        [gui.Text()],
-        [gui.Text('Código', size=20), gui.Text(size=20, key='codigo')],
+        [gui.Text('Nome do produto', font=20, size=18),
+         gui.Combo(nome, size=20, key='nome', enable_events=True, readonly=True)],
+        [gui.Text('Quantidade', size=20), gui.Input(size=5, key='quantidade'),
+         gui.Text(key='disponivel')],
+        [gui.Text('Código/Referência', size=20), gui.Text(size=20, key='codigo')],
         [gui.Text('Descrição', size=20), gui.Text(size=20, key='descricao')],
         [gui.Text('Valor R$', size=20), gui.Input(size=20, key='valor')],
         [gui.Text()],
@@ -48,10 +56,10 @@ def cadastrar_venda():
             break
         elif events == 'nome':
             produto_selecionado = values['nome']
-            index = dados[0].index(produto_selecionado)
-            window['descricao'].update(dados[1][index])
-            window['disponivel'].update(f'Em estoque: {dados[2][index]}')
-            window['codigo'].update(dados[3][index])
+            index = nome.index(produto_selecionado)
+            window['descricao'].update(descricao[index])
+            window['disponivel'].update(f'Em estoque: {volume[index]}')
+            window['codigo'].update(referencia[index])
         elif not values['nome']:
             gui.popup('Preencha os campos obrigatórios')
             continue
@@ -60,28 +68,26 @@ def cadastrar_venda():
             continue
         elif not values['valor'].replace('.', '', 1).isnumeric():
             gui.popup('Digite o preço correto')
+            continue
         elif events == 'Cadastrar':
-
-            produto = values['nome'].title()
-            cliente = values['cliente'].title()
-            vendedor = values['vendedor'].title()
-            preco = float(values['valor'])
+            produto = values['nome']
+            detalhes = window['descricao'].get().encode('utf-8')
+            codigo = window['codigo'].get().encode('utf-8')
             quantidade = int(values['quantidade'])
-            print(index, quantidade, dados[1][index])
-            if quantidade > dados[1][index]:
-                gui.popup('Quantidade não disponivel')
-                continue
-            codigo = values['codigo']
-            descricao = values['descricao'].title()
+            preco = float(values['valor'])
+            vendedor = values['vendedor']
+            cliente = values['cliente']
             total = preco * quantidade
             data = datetime.date.today()
+            con.execute('''INSERT INTO Vendas (Produto, Descrição, Código, Quantidade, Preço, Vendedor, Cliente, Total, Data) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)''', (produto, detalhes, codigo, quantidade, preco, vendedor, cliente, total, data))
+            con.commit()
             gui.popup('Venda cadastrada com sucesso!')
-
+    con.close()
     window.close()
 
 
 def cadastrar_produto():
-
     con = sqlite3.connect('produtos.db')
     layout = [
         [gui.Text('Nome do Produto', size=20), gui.Input(key='nome', size=20)],
@@ -95,7 +101,8 @@ def cadastrar_produto():
 
     con.execute('''CREATE TABLE IF NOT EXISTS Produtos
                 (ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, 
-                Produto TEXT NOT NULL, Descrição TEXT NOT NULL, 
+                Produto TEXT NOT NULL, 
+                Descrição TEXT NOT NULL, 
                 Quantidade INTEGER NOT NULL, 
                 Tamanho TEXT NOT NULL)''')
     while True:
