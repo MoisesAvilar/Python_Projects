@@ -3,6 +3,70 @@ import datetime
 import sqlite3
 
 
+def menu():
+    return [
+        ['Arquivo', 'Nada'],
+        ['Ajuda', ['Sobre']]]
+
+
+def tabela_produtos(nome, descricao, quantidade, tamanho):
+    con = sqlite3.connect('produtos.db')
+    con.execute('''CREATE TABLE IF NOT EXISTS Produtos
+                (ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, 
+                Produto TEXT NOT NULL, 
+                Descrição TEXT NOT NULL, 
+                Quantidade INTEGER NOT NULL, 
+                Tamanho TEXT NOT NULL)''')
+    con.execute('''INSERT INTO Produtos (Produto, Descrição, Quantidade, Tamanho)
+                                VALUES (?, ?, ?, ?)''', (nome, descricao, quantidade, tamanho))
+    con.commit()
+    con.close()
+
+
+def carregar_vendas(produto, detalhes, codigo, quantidade, preco, vendedor, cliente, total, data):
+    con = sqlite3.connect('vendas.db')
+    con.execute('''CREATE TABLE IF NOT EXISTS Vendas
+                (ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                Produto TEXT NOT NULL,
+                Descrição TEXT NOT NULL,
+                Código TEXT NOT NULL,
+                Quantidade INTEGER NOT NULL,
+                Preço REAL NOT NULL,
+                Vendedor TEXT,
+                Cliente TEXT,
+                Total REAL NOT NULL,
+                Data TEXT NOT NULL)''')
+    con.execute('''INSERT INTO Vendas 
+                (Produto, Descrição, Código, Quantidade, Preço, Vendedor, Cliente, Total, Data) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+                (produto, detalhes, codigo, quantidade, preco, vendedor, cliente, total, data))
+    con.commit()
+    con.close()
+
+
+def carregar_produtos(produto, quantidade):
+    con = sqlite3.connect('produtos.db')
+    cursor = con.cursor()
+    cursor.execute('''SELECT Quantidade FROM Produtos WHERE Produto = ?''', (produto,))
+    valor = cursor.fetchone()
+    valor = valor[0]
+    restante = valor - quantidade
+    cursor.execute('''UPDATE Produtos SET Quantidade = ? WHERE Produto = ?''', (restante, produto,))
+    con.commit()
+    con.close()
+
+
+def atualizar_estoque(produto, window):
+    con = sqlite3.connect('produtos.db')
+    cursor = con.cursor()
+    cursor.execute('SELECT Quantidade FROM Produtos WHERE Produto = ?', (produto,))
+    result = cursor.fetchone()
+    if result:
+        disponivel = result[0]
+        window['disponivel'].update(f'Em estoque: {disponivel}')
+    con.close()
+
+
 def carregar_dados():
     con = sqlite3.connect('produtos.db')
     cursor = con.cursor()
@@ -12,19 +76,6 @@ def carregar_dados():
 
 
 def cadastrar_venda():
-    con = sqlite3.connect('vendas.db')
-    con.execute('''CREATE TABLE IF NOT EXISTS Vendas
-                    (ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-                    Produto TEXT NOT NULL,
-                    Descrição TEXT NOT NULL,
-                    Código TEXT NOT NULL,
-                    Quantidade INTEGER NOT NULL,
-                    Preço REAL NOT NULL,
-                    Vendedor TEXT,
-                    Cliente TEXT,
-                    Total REAL NOT NULL,
-                    Data TEXT NOT NULL)''')
-
     dados = carregar_dados()
     nome = [tupla[0] for tupla in dados]
     descricao = [tupla[1] for tupla in dados]
@@ -45,10 +96,10 @@ def cadastrar_venda():
         [gui.Text('Nome do cliente', size=20), gui.Input(size=20, key='cliente')],
         [gui.Text('Nome do vendedor', size=20), gui.Input(size=20, key='vendedor')],
         [gui.Text()],
-        [gui.Text(size=10), gui.Button('Cadastrar', size=20), gui.Text(size=10)]
+        [gui.Text(size=10), gui.Button('Registrar', size=20), gui.Text(size=10)]
     ]
 
-    window = gui.Window('Sistema de Cadastro de Vendas', layout)
+    window = gui.Window('Sistema de Registro de Vendas', layout)
 
     while True:
         events, values = window.read()
@@ -60,6 +111,7 @@ def cadastrar_venda():
             window['descricao'].update(descricao[index])
             window['disponivel'].update(f'Em estoque: {volume[index]}')
             window['codigo'].update(referencia[index])
+            atualizar_estoque(produto_selecionado, window)
         elif not values['nome']:
             gui.popup('Preencha os campos obrigatórios')
             continue
@@ -69,26 +121,37 @@ def cadastrar_venda():
         elif not values['valor'].replace('.', '', 1).isnumeric():
             gui.popup('Digite o preço correto')
             continue
-        elif events == 'Cadastrar':
+        elif events == 'Registrar':
+
             produto = values['nome']
             detalhes = window['descricao'].get().encode('utf-8')
             codigo = window['codigo'].get().encode('utf-8')
             quantidade = int(values['quantidade'])
             preco = float(values['valor'])
-            vendedor = values['vendedor']
-            cliente = values['cliente']
+            vendedor = values['vendedor'].title()
+            cliente = values['cliente'].title()
             total = preco * quantidade
             data = datetime.date.today()
-            con.execute('''INSERT INTO Vendas (Produto, Descrição, Código, Quantidade, Preço, Vendedor, Cliente, Total, Data) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)''', (produto, detalhes, codigo, quantidade, preco, vendedor, cliente, total, data))
-            con.commit()
-            gui.popup('Venda cadastrada com sucesso!')
-    con.close()
+
+            carregar_vendas(produto, detalhes, codigo, quantidade, preco, vendedor, cliente, total, data)
+
+            gui.popup('Venda registrada com sucesso!')
+
+            carregar_produtos(produto, quantidade)
+
+            window.Element('nome').update('')
+            window.Element('descricao').update('')
+            window.Element('codigo').update('')
+            window.Element('quantidade').update('')
+            window.Element('disponivel').update('')
+            window.Element('valor').update('')
+            window.Element('vendedor').update('')
+            window.Element('cliente').update('')
     window.close()
 
 
 def cadastrar_produto():
-    con = sqlite3.connect('produtos.db')
+
     layout = [
         [gui.Text('Nome do Produto', size=20), gui.Input(key='nome', size=20)],
         [gui.Text('Descrição do Produto', size=20), gui.Input(key='descricao', size=20)],
@@ -99,12 +162,6 @@ def cadastrar_produto():
 
     window = gui.Window('Cadastrar Produtos', layout)
 
-    con.execute('''CREATE TABLE IF NOT EXISTS Produtos
-                (ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, 
-                Produto TEXT NOT NULL, 
-                Descrição TEXT NOT NULL, 
-                Quantidade INTEGER NOT NULL, 
-                Tamanho TEXT NOT NULL)''')
     while True:
         try:
             event, value = window.read()
@@ -125,9 +182,9 @@ def cadastrar_produto():
             descricao = value['descricao'].strip().title()
             quantidade = value['quantidade'].strip()
             tamanho = value['tamanho'].strip()
-            con.execute('''INSERT INTO Produtos (Produto, Descrição, Quantidade, Tamanho)
-                            VALUES (?, ?, ?, ?)''', (nome, descricao, quantidade, tamanho))
-            con.commit()
+
+            tabela_produtos(nome, descricao, quantidade, tamanho)
+
             window.Element('nome').update('')
             window.Element('descricao').update('')
             window.Element('quantidade').update('')
@@ -135,5 +192,4 @@ def cadastrar_produto():
             window['nome'].set_focus()
             gui.popup('Produto cadastrado com sucesso!')
 
-    con.close()
     window.close()

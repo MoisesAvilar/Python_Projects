@@ -7,10 +7,11 @@ interface = [
     [Gui.Text('Selecione as opções desejadas', font=16, key='start', justification='c')],
 
     [Gui.Text('Tipo de senha', font=16, size=15, key='pass_text'),
-     Gui.Combo(['De A à Z', 'Numérico', 'Alfanumérico'], font=16, size=13, key='tipo', default_value='-- Selecionar')],
+     Gui.Combo(['De A à Z', 'Numérico', 'Alfanumérico'], readonly=True, font=16, size=13, key='tipo',
+               default_value='-- Selecionar')],
 
     [Gui.Text('Tamanho da senha', font=16, size=15),
-     Gui.Combo(list(range(8, 31)), font=16, key='size', default_value=12)],
+     Gui.Combo(list(range(8, 31)), font=16, key='size', default_value=12, readonly=True)],
 
     [Gui.Button('Gerar Senha', font=16, size=(25, 2)), Gui.Button('Sair', font=16, size=(8, 2))],
 

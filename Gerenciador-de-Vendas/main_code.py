@@ -1,6 +1,7 @@
 from functions import *
 
 layout = [
+    [gui.Menu(menu())],
     [gui.Button('Cadastrar Produto'), gui.Button('Cadastrar Venda')]
 ]
 
