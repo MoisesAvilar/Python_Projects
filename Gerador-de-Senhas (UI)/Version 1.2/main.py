@@ -34,33 +34,26 @@ while True:
     elif evento == 'Gerar Senha':
 
         # Segunda etapa de verificação de eventos para evitar possíveis erros
-
         valores['size'] = int(valores['size'])
-        if valores['size'] <= 0 or valores['size'] is False:
-            janela['vazio'].update('Valores negativos não são aceitos')
-        elif valores['tipo'] == '-- Selecionar':
-            janela['vazio'].update('Escolha uma das opções disponíveis')
-        elif valores['tipo'] != 'De A à Z' and valores['tipo'] != 'Numérico' and valores['tipo'] != 'Alfanumérico':
-            janela['vazio'].update('Apenas as opções disponíveis serão aceitas.')
-        else:
 
-            # Caso tudo esteja certo, finalmente vai para a última etapa de criação da senha
+        if valores['tipo'] == 'De A à Z':
+            generator = main_function(1, valores['size'])
+            janela['vazio'].update('Senha gerada com sucesso!')
+            janela['campo'].update(f'{generator}')
+            success = True
+        elif valores['tipo'] == 'Numérico':
+            generator = main_function(2, valores['size'])
+            janela['vazio'].update('Senha gerada com sucesso!')
+            janela['campo'].update(f'{generator}')
+            success = True
+        elif valores['tipo'] == 'Alfanumérico':
+            generator = main_function(3, valores['size'])
+            janela['vazio'].update('Senha gerada com sucesso!')
+            janela['campo'].update(f'{generator}')
+            success = True
 
-            if valores['tipo'] == 'De A à Z':
-                generator = main_function(1, valores['size'])
-                janela['vazio'].update('Senha gerada com sucesso!')
-                janela['campo'].update(f'{generator}')
-                success = True
-            elif valores['tipo'] == 'Numérico':
-                generator = main_function(2, valores['size'])
-                janela['vazio'].update('Senha gerada com sucesso!')
-                janela['campo'].update(f'{generator}')
-                success = True
-            elif valores['tipo'] == 'Alfanumérico':
-                generator = main_function(3, valores['size'])
-                janela['vazio'].update('Senha gerada com sucesso!')
-                janela['campo'].update(f'{generator}')
-                success = True
+        elif valores['tipo'] in '-- Selecionar':
+            Gui.popup('Você deve escolher o tipo de caracter\n\tantes de gerar a senha')
     # Após a senha ser gerada, o usuário pode escolher se salva em um arquivo de texto
 
     elif evento == '\t\t Salvar Senha\t\t       ':
