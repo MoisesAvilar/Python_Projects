@@ -78,6 +78,7 @@ def carregar_dados():
 class CadastrarVenda:
     def __init__(self):
         global index
+        multiplas_vendas = {}
         dados = carregar_dados()
         nome = [tupla[0] for tupla in dados]
         descricao = [tupla[1] for tupla in dados]
@@ -110,9 +111,7 @@ class CadastrarVenda:
                         gui.Input(size=20, key='cliente', background_color='lightgray', text_color='darkblue')],
                     [gui.Text('Nome do vendedor', size=20),
                         gui.Input(size=20, key='vendedor', background_color='lightgray', text_color='darkblue')],
-                    [gui.Text()],
-                    [gui.Text(size=10), gui.Button('Registrar', size=20), gui.Text(size=10)],
-                    [gui.Text()],
+                    [gui.Button('Registrar', size=20, pad=(50, 50))],
                     ]
                 )
             ]
@@ -145,6 +144,7 @@ class CadastrarVenda:
                 gui.popup('Quantidade não disponivel')
                 continue
             elif events == 'Adicionar produto':
+
                 produto = values['nome']
                 detalhes = self.window['descricao'].get().encode('utf-8')
                 codigo = self.window['codigo'].get().encode('utf-8')
@@ -155,8 +155,16 @@ class CadastrarVenda:
                 total = preco * quantidade
                 data = datetime.date.today()
 
-                carregar_vendas(produto, detalhes, codigo, quantidade, preco, vendedor, cliente, total, data)
-                gui.popup('Venda registrada com sucesso!')
+                multiplas_vendas['produto'] = produto
+                multiplas_vendas['detalhes'] = detalhes
+                multiplas_vendas['codigo'] = codigo
+                multiplas_vendas['quantidade'] = quantidade
+                multiplas_vendas['preco'] = preco
+                multiplas_vendas['vendedor'] = vendedor
+                multiplas_vendas['cliente'] = cliente
+                multiplas_vendas['total'] = total
+                multiplas_vendas['data'] = data
+                multiplas_vendas.copy()
 
                 self.window.Element('nome').update('')
                 self.window.Element('descricao').update('')
@@ -168,21 +176,25 @@ class CadastrarVenda:
                 self.window.Element('cliente').update('')
 
             elif events == 'Registrar':
-                produto = values['nome']
-                detalhes = self.window['descricao'].get().encode('utf-8')
-                codigo = self.window['codigo'].get().encode('utf-8')
-                quantidade = int(values['quantidade'])
-                preco = float(values['valor'])
-                vendedor = values['vendedor'].title()
-                cliente = values['cliente'].title()
-                total = preco * quantidade
-                data = datetime.date.today()
+                if not multiplas_vendas:
+                    produto = values['nome']
+                    detalhes = self.window['descricao'].get().encode('utf-8')
+                    codigo = self.window['codigo'].get().encode('utf-8')
+                    quantidade = int(values['quantidade'])
+                    preco = float(values['valor'])
+                    vendedor = values['vendedor'].title()
+                    cliente = values['cliente'].title()
+                    total = preco * quantidade
+                    data = datetime.date.today()
 
-                carregar_vendas(produto, detalhes, codigo, quantidade, preco, vendedor, cliente, total, data)
+                    carregar_vendas(produto, detalhes, codigo, quantidade, preco, vendedor, cliente, total, data)
 
-                gui.popup('Venda registrada com sucesso!')
+                    gui.popup('Venda registrada com sucesso!')
 
-                carregar_produtos(produto, quantidade)
+                    carregar_produtos(produto, quantidade)
+                else:
+                    for chave, valor in multiplas_vendas.items():
+                        print(chave, valor)
 
         self.window.close()
 
